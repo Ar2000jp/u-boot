@@ -499,7 +499,7 @@ void usbtty_puts (const char *str)
 
 		if (str[n] == '\n') {
 			__usbtty_puts (str, n + 1);
-			__usbtty_puts ("\r", 1);
+			usbtty_putc ('\r');
 			str += (n + 1);
 			len -= (n + 1);
 		} else {
