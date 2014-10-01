@@ -46,11 +46,16 @@
 #undef CONFIG_CONS_INDEX
 #define CONFIG_CONS_INDEX	1
 
+#define CONFIG_CONSOLE_MUX
+
 #undef CONFIG_BOOTDELAY
 #define CONFIG_BOOTDELAY	1
 
 #undef CONFIG_EXTRA_ENV_SETTINGS
 #define CONFIG_EXTRA_ENV_SETTINGS \
+	"stdin=serial,usbtty\0" \
+	"stdout=serial,usbtty\0" \
+	"stderr=serial,usbtty\0" \
 	"usbtty=cdc_acm\0" \
 	"loadaddr=0x82000000"
 
