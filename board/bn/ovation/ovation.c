@@ -25,6 +25,14 @@ const struct omap_sysinfo sysinfo = {
 	"Board: OMAP4 BN Ovation\n"
 };
 
+#define PRM_RSTCTRL_COLD_RESET		0x02
+
+void reset_cpu(unsigned long ignored)
+{
+	/* X-Loader hangs after doing a warm reset (U-Boot's default). */
+	writel(PRM_RSTCTRL_COLD_RESET, PRM_RSTCTRL);
+}
+
 int board_init(void)
 {
 	gd->bd->bi_boot_params = (0x80000000 + 0x100); /* boot param addr */
