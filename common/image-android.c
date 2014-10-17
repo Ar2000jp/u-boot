@@ -7,6 +7,7 @@
 #include <common.h>
 #include <image.h>
 #include <android_image.h>
+#include <malloc.h>
 
 static char andr_tmp_str[ANDR_BOOT_ARGS_SIZE + 1];
 
@@ -25,12 +26,30 @@ int android_image_get_kernel(const struct andr_img_hdr *hdr, int verify,
 
 	printf("Kernel load addr 0x%08x size %u KiB\n",
 	       hdr->kernel_addr, DIV_ROUND_UP(hdr->kernel_size, 1024));
+
 	strncpy(andr_tmp_str, hdr->cmdline, ANDR_BOOT_ARGS_SIZE);
 	andr_tmp_str[ANDR_BOOT_ARGS_SIZE] = '\0';
 	if (strlen(andr_tmp_str)) {
 		printf("Kernel command line: %s\n", andr_tmp_str);
-		setenv("bootargs", andr_tmp_str);
+		char *bootargs = getenv("bootargs");
+		if (bootargs == NULL) {
+			setenv("bootargs", andr_tmp_str);
+		} else {
+			char *newbootargs = malloc(strlen(bootargs) +
+						strlen(andr_tmp_str) + 1);
+			if (newbootargs == NULL) {
+				puts("Error: malloc in android_image_get_kernel failed!\n");
+				return -1;
+			}
+
+			strcpy(newbootargs, bootargs);
+			strcat(newbootargs, " ");
+			strncat(newbootargs, andr_tmp_str, ANDR_BOOT_ARGS_SIZE);
+
+			setenv("bootargs", newbootargs);
+		}
 	}
+
 	if (hdr->ramdisk_size)
 		printf("RAM disk load addr 0x%08x size %u KiB\n",
 		       hdr->ramdisk_addr,
@@ -52,17 +71,18 @@ int android_image_check_header(const struct andr_img_hdr *hdr)
 
 ulong android_image_get_end(const struct andr_img_hdr *hdr)
 {
-	u32 size = 0;
+	ulong end;
 	/*
 	 * The header takes a full page, the remaining components are aligned
 	 * on page boundary
 	 */
-	size += hdr->page_size;
-	size += ALIGN(hdr->kernel_size, hdr->page_size);
-	size += ALIGN(hdr->ramdisk_size, hdr->page_size);
-	size += ALIGN(hdr->second_size, hdr->page_size);
+	end = (ulong)hdr;
+	end += hdr->page_size;
+	end += ALIGN(hdr->kernel_size, hdr->page_size);
+	end += ALIGN(hdr->ramdisk_size, hdr->page_size);
+	end += ALIGN(hdr->second_size, hdr->page_size);
 
-	return size;
+	return end;
 }
 
 ulong android_image_get_kload(const struct andr_img_hdr *hdr)
